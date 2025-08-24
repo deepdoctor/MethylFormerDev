@@ -18,7 +18,7 @@ pip install CpGPT
 ```
 
 ## 🧪 Tutorial
-
+Modify the `root_dir` in `scripts/train_ctcf_ddp.py` to your working directory.
 ### Single GPU (or CPU) plain python:
 
 ```
