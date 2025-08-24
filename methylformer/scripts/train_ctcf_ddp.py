@@ -31,7 +31,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.cuda.amp import GradScaler
 from torch.utils.checkpoint import checkpoint
-root_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformerfull"
+root_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformer"
 os.chdir(root_dir)
 import sys 
 sys.path.append(root_dir)
@@ -514,8 +514,8 @@ def main() -> None:
         val_loader = None
 
     # ---------- models ----------
-    enc = MethylationBERT(d_model=128, nhead=4, num_layers=1, max_len=args.max_len)
-    dec = CTCFDecoder(d_model=128, nhead=4, num_layers=1, max_len=args.max_len)
+    enc = MethylationBERT(d_model=128, nhead=8, num_layers=4, max_len=args.max_len)
+    dec = CTCFDecoder(d_model=128, nhead=8, num_layers=4, max_len=args.max_len)
     enc_wrap = EncoderWrapper(enc, d_model=128)
 
     if args.compile:
