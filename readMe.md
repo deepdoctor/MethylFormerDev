@@ -12,7 +12,7 @@ MethylFormer is a WGBS-based methylation foundation model, and our primary objec
 # Clone the repository
 git clone https://github.com/deepdoctor/MethylFormerDev.git
 # Create conda env
-conda create -n mehthylFormer python=3.9.10
+conda create -n methylFormer python=3.9.10
 # "Install CpGpt to obtain its dependent packages.
 pip install CpGPT
 ```
@@ -22,13 +22,12 @@ Modify the `root_dir` in `scripts/train_ctcf_ddp.py` to your working directory.
 ### Single GPU (or CPU) plain python:
 
 ```
-python scripts/train_ctcf_ddp.py --distributed none --config configs/train_ctcf_single_gpu.json
+python scripts/train_ctcf_ddp.py --distributed none --config configs/train_ctcf_gpu.json
 ```
 
-### Single machine, 4 GPUs (DDP):
+### Single machine, multi GPUs (DDP):
 
 ```bash
-torchrun --nproc_per_node=4 scripts/train_ctcf_ddp.py --distributed ddp --config configs/train_ctcf_ddp_4gpu.json
+torchrun --nproc_per_node=2 scripts/train_ctcf_ddp.py --distributed ddp --config configs/train_ctcf_ddp_gpus.json
 ```
 
-':!methylformer/data/'
