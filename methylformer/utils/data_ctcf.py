@@ -2,11 +2,13 @@
 import json
 import torch
 from torch.utils.data import Dataset
+import orjson
 
 class MethylationToCTCFDataset(Dataset):
     def __init__(self, json_path, max_len=512, step=1, sos_value=0.0, pad_value=0.0, normalize_targets=True):
-        with open(json_path, "r") as f:
-            self.data = json.load(f)
+        with open(json_path, "rb") as f:
+            # self.data = json.load(f)
+            self.data = orjson.loads(f.read())
         self.max_len = max_len
         self.step = step
         self.sos_value = sos_value

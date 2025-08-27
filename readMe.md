@@ -31,3 +31,4 @@ python scripts/train_ctcf_ddp.py --distributed none --config configs/train_ctcf_
 torchrun --nproc_per_node=4 scripts/train_ctcf_ddp.py --distributed ddp --config configs/train_ctcf_ddp_4gpu.json
 ```
 
+':!methylformer/data/'
