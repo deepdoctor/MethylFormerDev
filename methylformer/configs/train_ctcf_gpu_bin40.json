@@ -1,6 +1,6 @@
 {
-    "data": "data/train_ctcf_bin40.json",
-    "val_data": "data/valid_ctcf_bin40.json",
+    "data": "data/bin40/train_merged.json",
+    "val_data": "data/bin40/valid_merged.json",
     "max_len": 110,
     "d_model": 128,
     "nhead": 4, 
@@ -9,7 +9,7 @@
     "step": 1,
     "batch_size": 16,
     "num_workers": 12,
-    "epochs": 20,
+    "epochs": 200,
     "lr": 0.0003,
     "min_lr": 1e-06,
     "weight_decay": 0.01,

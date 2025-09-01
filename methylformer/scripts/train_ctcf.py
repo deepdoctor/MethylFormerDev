@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler
-
+import pandas as pd
 root_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformer"
 os.chdir(root_dir)
 sys.path.append(root_dir)
@@ -27,6 +27,9 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
+
+def load_ctcf_methyl_id(data_name):
+    pd.read_csv(data_name)
 
 
 # ---------------------- main ----------------------
@@ -126,8 +129,9 @@ def main() -> None:
                 mu, logvar = ctcf_model(methylation, positions, dec_in, positions, memory_key_padding_mask=pad_mask)
 
                 # loss_map = ((mu - targets) ** 2 * inv_var + logvar).masked_fill(pad_mask, 0.0)
-                loss_map = ((mu - targets) ** 2  ).masked_fill(pad_mask, 0.0)
-
+                # loss_map = ((mu - targets) ** 2  ).masked_fill(pad_mask, 0.0)
+                # Composite loss: MSE + Wasserstein (equal weights)
+                loss_map = get_loss(mu, targets, pad_mask, loss_type={"mse": 1.0, "wasserstein": 1.0})
                 loss = loss_map.sum() / ((~pad_mask).float().sum().clamp_min(1.0))
                 mae_map = (torch.abs(mu - targets)).masked_fill(pad_mask, 0.0)
 
@@ -191,3 +195,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+#  python scripts/train_ctcf.py  --config configs/train_ctcf_gpu_bin40.json

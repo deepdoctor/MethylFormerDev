@@ -15,6 +15,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.cuda.amp import GradScaler
 from torch.utils.checkpoint import checkpoint
+import torch
+import torch.nn.functional as F
 # ---------------------- Argparse & Config ----------------------
 # ---------------------- printing helpers ----------------------
 class RankPrinter:
@@ -93,8 +95,8 @@ def add_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--gen_sigma_scale", type=float, default=1.0, help="scale for std when sampling")
 
     # config I/O
-    parser.add_argument("--config", type=str, default="configs/train_ctcf_gpu.json", help="JSON config path to load")
-    # parser.add_argument("--save_config", type=str, default="config/saved_config.json", help="Save the resolved config to this JSON path and exit")
+    parser.add_argument("--config", type=str, default="configs/train_ctcf_gpu_bin40.json", help="JSON config path to load")
+    # parser.add_argument("--save_config", type=str, default="configs/train_ctcf_bin40.json", help="Save the resolved config to this JSON path and exit")
     parser.add_argument("--save_config", type=str, default="", help="Save the resolved config to this JSON path and exit")
 
     parser.add_argument("--dump_used_config", action="store_true", help="At training start, dump resolved config to save_dir/config_used.json")
@@ -261,3 +263,76 @@ def run_eval(model,
     loss = (loss_sum / tok_sum.clamp_min(1.0)).item()
     mae = (mae_sum / tok_sum.clamp_min(1.0)).item()
     return loss, mae
+
+def get_loss(mu, targets, pad_mask=None, loss_type="mse", logvar=None, delta=1.0):
+    """
+    Universal loss function selector with support for multiple loss types.
+
+    Args:
+        mu: Predicted values (tensor)
+        targets: Ground truth values (tensor)
+        pad_mask: Boolean mask for padding positions (True = ignore)
+        loss_type: 
+            - str: one of ["mse", "mae", "huber", "gaussian_nll", "wasserstein", "corr"]
+            - dict: e.g. {"mse": 0.7, "corr": 0.3} for weighted combination
+        logvar: Log-variance tensor, required if loss_type includes "gaussian_nll"
+        delta: Smoothing parameter for Huber loss
+
+    Returns:
+        Scalar tensor loss
+    """
+    if pad_mask is None:
+        pad_mask = torch.zeros_like(targets, dtype=torch.bool)
+
+    def _single_loss(loss_name):
+        denom = ((~pad_mask).float().sum().clamp_min(1.0))
+
+        if loss_name == "mse":
+            loss_map = ((mu - targets) ** 2).masked_fill(pad_mask, 0.0)
+            return loss_map.sum() / denom
+
+        elif loss_name == "mae":
+            loss_map = (torch.abs(mu - targets)).masked_fill(pad_mask, 0.0)
+            return loss_map.sum() / denom
+
+        elif loss_name == "huber":
+            loss_map = F.huber_loss(mu, targets, reduction="none", delta=delta).masked_fill(pad_mask, 0.0)
+            return loss_map.sum() / denom
+
+        elif loss_name == "gaussian_nll":
+            assert logvar is not None, "logvar must be provided for gaussian_nll"
+            inv_var = torch.exp(-logvar)
+            loss_map = (((mu - targets) ** 2) * inv_var + logvar).masked_fill(pad_mask, 0.0)
+            return loss_map.sum() / denom
+
+        elif loss_name == "wasserstein":
+            # 1D Wasserstein distance (approx via sorting)
+            mu_sorted, _ = torch.sort(mu[~pad_mask].view(-1))
+            tgt_sorted, _ = torch.sort(targets[~pad_mask].view(-1))
+            return torch.mean(torch.abs(mu_sorted - tgt_sorted))
+
+        elif loss_name == "corr":
+            # Negative Pearson correlation
+            x = mu[~pad_mask].view(-1)
+            y = targets[~pad_mask].view(-1)
+            vx = x - torch.mean(x)
+            vy = y - torch.mean(y)
+            corr = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)) + 1e-8)
+            return 1 - corr  # loss decreases when correlation increases
+
+        else:
+            raise ValueError(f"Unknown loss_type: {loss_name}")
+
+    # Case 1: single loss (string)
+    if isinstance(loss_type, str):
+        return _single_loss(loss_type)
+
+    # Case 2: multiple losses (dict with weights)
+    elif isinstance(loss_type, dict):
+        total_loss = 0.0
+        for name, weight in loss_type.items():
+            total_loss += weight * _single_loss(name)
+        return total_loss
+
+    else:
+        raise TypeError("loss_type must be str or dict")
