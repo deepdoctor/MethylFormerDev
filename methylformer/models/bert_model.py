@@ -6,7 +6,6 @@ class MethylationBERT(nn.Module):
     def __init__(self, d_model=128, nhead=4, num_layers=4, max_len=512):
         super(MethylationBERT, self).__init__()
         self.meth_embed = nn.Linear(1, d_model)
-        self.pos_embed = nn.Linear(1, d_model)
         self.position_encoding = nn.Parameter(torch.randn(1, max_len, d_model))
 
         # encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True)

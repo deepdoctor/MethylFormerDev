@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler
 import pandas as pd
 root_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformer"
+root_dir = "/groups/adv2105_gp/yichen/deep/MethylFormerDev/methylformer"
 os.chdir(root_dir)
 sys.path.append(root_dir)
 from utils.data_ctcf import MethylationToCTCFDataset
@@ -30,7 +31,6 @@ def set_seed(seed: int) -> None:
 
 def load_ctcf_methyl_id(data_name):
     pd.read_csv(data_name)
-
 
 # ---------------------- main ----------------------
 def main() -> None:
@@ -167,7 +167,6 @@ def main() -> None:
         do_val = (val_loader is not None) and ((ep + 1) % max(1, args.val_every) == 0)
         val_loss = None
         val_mae = None
-                # periodic validation
         if do_val:
             edmod = ctcf_model.module if isinstance(ctcf_model, DDP) else ctcf_model
             val_loss, val_mae = run_eval( edmod, val_loader, device, precision=args.precision)
@@ -196,3 +195,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 #  python scripts/train_ctcf.py  --config configs/train_ctcf_gpu_bin40.json
+#  python scripts/train_ctcf.py  --config configs/train_ctcf_gpu_bin20.json

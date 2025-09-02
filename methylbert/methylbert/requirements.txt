@@ -1,0 +1,5 @@
+torch>=2.1
+pyyaml>=6.0
+orjson>=3.9.15
+tqdm>=4.66
+numpy>=1.23

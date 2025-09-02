@@ -1,0 +1,46 @@
+data:
+  json_path: /media/desk16/zhiwei/paper_code/MethylFormer/methylformer/data/train_merged_bin20.json
+  max_len: 512
+  step: 1
+  sos_value: 0.0
+  pad_value: 0.0
+  normalize_targets: true
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+masking:
+  mlm_prob: 0.15
+  mask_prob: 0.8
+  random_prob: 0.1
+  keep_prob: 0.1
+  random_value_range:
+  - 0.0
+  - 1.0
+model:
+  d_model: 192
+  n_heads: 6
+  n_layers: 6
+  d_ff: 384
+  dropout: 0.1
+  pos_proj: true
+  pos_mlp_hidden: 32
+  activation: gelu
+training:
+  epochs: 10
+  batch_size: 16
+  lr: 0.0003
+  weight_decay: 0.01
+  betas:
+  - 0.9
+  - 0.98
+  eps: 1.0e-08
+  warmup_steps: 1000
+  gradient_accumulation: 1
+  max_steps: -1
+  amp: false
+  seed: 42
+  log_every: 50
+  save_dir: checkpoints
+loss:
+  type: huber
+  delta: 1.0

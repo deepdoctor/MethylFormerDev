@@ -15,7 +15,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.cuda.amp import GradScaler
 from torch.utils.checkpoint import checkpoint
-import torch
 import torch.nn.functional as F
 # ---------------------- Argparse & Config ----------------------
 # ---------------------- printing helpers ----------------------

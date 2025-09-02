@@ -196,3 +196,5 @@ class CTCFTransformer(nn.Module):
         logvar_seq = torch.stack(logvar_all, dim=1)  # (B, T)
 
         return generated, mu_seq, logvar_seq
+
+

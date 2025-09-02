@@ -4,11 +4,13 @@ import pysam
 import numpy as np
 from multiprocessing import Pool, cpu_count
 import json
-import pandas as pd
+import os
+import orjson
+
 shared_data_dir =  "/media/desk16/share/zhiwei/"
 result_dir = "/media/desk16/zhiwei/paper_code/MethylFormer_pre/result/"
 fasta_path = shared_data_dir + "sequenceData/hg38.fa"
-data_dir = "/media/desk16/share/zhiwei/sequenceData/"
+data_dir = shared_data_dir + "sequenceData/"
 human_TSS = pd.read_csv(result_dir+"gencode_v47_TSS_with_gene_unique.bed",sep="\t")
 human_TSS = human_TSS[human_TSS.iloc[:,1] >= 2100]
 
@@ -26,7 +28,6 @@ def make_initializer(bw_meth_path, bw_ctcf_path):
         fasta = pysam.FastaFile(fasta_path)
     return initializer
 
-import numpy as np
 
 def bin_signal(values, bin_size=40):
     """
@@ -69,7 +70,6 @@ def extract_region_data(row, bin_size=40):
         meth_binned = []
         ctcf_binned = []
         seq = ""
-        # print(e) 
         print(chrom, start, end,e)  
     return [chrom, start, end, meth_binned, ctcf_binned, seq]
 
@@ -86,12 +86,9 @@ def load_ctcf_wgbs_id(file_name="/media/desk16/zhiwei/paper_code/MethylFormer/pr
     # file_name = "/media/desk16/zhiwei/paper_code/MethylFormer/preprocessData/data/ctcf_wgbs_mapping.csv"
     ctcf_wgbs_id = pd.read_csv(file_name,sep="\t")
     ctcf_wgbs_id_dic = dict(zip(ctcf_wgbs_id["wgbs_id"], ctcf_wgbs_id["ctcf_id"]))
-    return ctcf_wgbs_id_dic,ctcf_wgbs_id["wgbs_id"].values.tolist()[:5]
+    return ctcf_wgbs_id_dic,ctcf_wgbs_id["wgbs_id"].values.tolist()[:17]
 
-import os
-import json
-
-def merge_json_files(folder: str):
+def merge_json_files(folder: str,bin_size):
     """
     Merge JSON files in the given folder.
     - Files starting with 'train' will be merged into 'train_merged.json'
@@ -123,24 +120,31 @@ def merge_json_files(folder: str):
                     valid_data.append(data)
 
     # Save merged results
+    # if train_data:
+    #     with open(os.path.join(folder, f"train_merged_bin{bin_size}.json"), "w", encoding="utf-8") as f:
+    #         json.dump(train_data, f, ensure_ascii=False, indent=2)
+
+    # if valid_data:
+    #     with open(os.path.join(folder, f"valid_merged_bin{bin_size}.json"), "w", encoding="utf-8") as f:
+    #         json.dump(valid_data, f, ensure_ascii=False, indent=2)
+
     if train_data:
-        with open(os.path.join(folder, "train_merged.json"), "w", encoding="utf-8") as f:
-            json.dump(train_data, f, ensure_ascii=False, indent=2)
+        with open(os.path.join(folder, f"train_merged_bin{bin_size}.json"), "wb") as f:
+            f.write(orjson.dumps(train_data, option=orjson.OPT_INDENT_2))
 
     if valid_data:
-        with open(os.path.join(folder, "valid_merged.json"), "w", encoding="utf-8") as f:
-            json.dump(valid_data, f, ensure_ascii=False, indent=2)
-
+        with open(os.path.join(folder, f"valid_merged_bin{bin_size}.json"), "wb") as f:
+            f.write(orjson.dumps(valid_data, option=orjson.OPT_INDENT_2))
     print("Merging completed!")
-
-# Example usage:
 
 
 if __name__ == "__main__":
     # List of EIDs to process
-    bin_size = 20
-    saved_data_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformer/data/{}/".format(bin_size)
+    bin_size = 40
+    saved_data_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylformer/data/bin{}/".format(bin_size)
     os.makedirs(saved_data_dir, exist_ok=True)
+    # merge_json_files(saved_data_dir,bin_size)
+
     eid_li = ["ENCFF990DKJ"]
     eid_ctcf = {"ENCFF990DKJ":"ENCFF680NIF"}
     eid_ctcf,eid_li = load_ctcf_wgbs_id()
@@ -160,19 +164,30 @@ if __name__ == "__main__":
                 result_matrix = pool.map(extract_region_data, regions)
 
             # json_result = make_dict_from_list(result_matrix)
+            # train_chr_list = [f"chr{i}" for i in range(1, 22)]
+            # train_data = make_dict_from_list(result_matrix, chr_list=train_chr_list)
+            # with open(saved_data_dir + "train_ctcf_bin{}_{}.json".format(bin_size,eid), "w", encoding="utf-8") as f:
+            #     json.dump(train_data, f, indent=4, ensure_ascii=False)
+
+            # val_chr_list = ["chr22", "chrX", "chrY"]
+            # val_data = make_dict_from_list(result_matrix, chr_list=val_chr_list)
+            # with open(saved_data_dir + "valid_ctcf_bin{}_{}.json".format(bin_size,eid), "w", encoding="utf-8") as f:
+            #     json.dump(val_data, f, indent=4, ensure_ascii=False)
+
             train_chr_list = [f"chr{i}" for i in range(1, 22)]
             train_data = make_dict_from_list(result_matrix, chr_list=train_chr_list)
-            with open(saved_data_dir + "train_ctcf_bin40_{}.json".format(eid), "w", encoding="utf-8") as f:
-                json.dump(train_data, f, indent=4, ensure_ascii=False)
-            # 验证集: chr22, chrX, chrY
+            with open(saved_data_dir + "train_ctcf_bin{}_{}.json".format(bin_size, eid), "wb") as f:
+                f.write(orjson.dumps(train_data, option=orjson.OPT_INDENT_2))
+
             val_chr_list = ["chr22", "chrX", "chrY"]
             val_data = make_dict_from_list(result_matrix, chr_list=val_chr_list)
-            with open(saved_data_dir + "valid_ctcf_bin40_{}.json".format(eid), "w", encoding="utf-8") as f:
-                json.dump(val_data, f, indent=4, ensure_ascii=False)
+            with open(saved_data_dir + "valid_ctcf_bin{}_{}.json".format(bin_size, eid), "wb") as f:
+                f.write(orjson.dumps(val_data, option=orjson.OPT_INDENT_2))
+
         except Exception as e:
             print(f"Failed processing {eid}: {str(e)}")
             
-    merge_json_files("/media/desk16/zhiwei/paper_code/MethylFormer/methylformer/data/bin40")
+    merge_json_files(saved_data_dir,bin_size)
 
 
 # aws s3 cp train_ctcf_bin40.json s3://demoyc42292/deeplearning/
