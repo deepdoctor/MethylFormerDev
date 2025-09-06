@@ -2,12 +2,16 @@
 import argparse
 import os
 from typing import Dict
-
 import torch
 from torch.optim import AdamW
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
+import sys
+root_dir = "/media/desk16/zhiwei/paper_code/MethylFormer/methylbert/methylbert"
+root_dir = "/groups/adv2105_gp/yichen/deep/MethylFormerDev/methylbert/methylbert"
 
+os.chdir(root_dir)
+sys.path.append(root_dir)
 from utils import set_seed, load_config, WarmupCosineLR
 from data import build_dataloader
 from model import MaskedValueBERT, masked_regression_loss
@@ -35,7 +39,7 @@ def parse_overrides(override_list):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, required=True, help="Path to YAML config")
+    parser.add_argument("--config", type=str, default="/media/desk16/zhiwei/paper_code/MethylFormer/methylbert/methylbert/configs/default.yaml", help="Path to YAML config")
     parser.add_argument("overrides", nargs="*", help="Key=Value overrides (e.g., training.batch_size=32)")
     args = parser.parse_args()
 
@@ -79,6 +83,12 @@ def main():
     best_loss = float("inf")
 
     model.train()
+
+    ckpt = torch.load("checkpoints/epoch1.pt", map_location=device)
+    model.load_state_dict(ckpt["model"])
+
+
+    
     for epoch in range(cfg["training"]["epochs"]):
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{cfg['training']['epochs']}")
         accum = cfg["training"]["gradient_accumulation"]
@@ -92,7 +102,7 @@ def main():
             loss_mask = batch["loss_mask"].to(device)    # [B, L+1]
 
             with autocast(enabled=cfg["training"]["amp"]):
-                preds, _ = model(methyl, pos, special)   # preds: [B, L+1]
+                preds, _ = model(methyl, special)   # preds: [B, L+1]
                 loss = masked_regression_loss(
                     preds, targets, loss_mask,
                     loss_type=cfg["loss"]["type"],

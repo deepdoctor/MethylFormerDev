@@ -1,6 +1,6 @@
 data:
-  json_path: /media/desk16/zhiwei/paper_code/MethylFormer/methylformer/data/train_merged_bin20.json
-  max_len: 512
+  json_path: /groups/adv2105_gp/yichen/deep/MethylFormerDev/methylformer/data/train_merged_bin40.json
+  max_len: 54
   step: 1
   sos_value: 0.0
   pad_value: 0.0
@@ -17,17 +17,15 @@ masking:
   - 0.0
   - 1.0
 model:
-  d_model: 192
-  n_heads: 6
-  n_layers: 6
-  d_ff: 384
+  d_model: 256
+  n_heads: 8
+  n_layers: 3
+  d_ff: 512
   dropout: 0.1
-  pos_proj: true
-  pos_mlp_hidden: 32
   activation: gelu
 training:
-  epochs: 10
-  batch_size: 16
+  epochs: 100
+  batch_size: 64
   lr: 0.0003
   weight_decay: 0.01
   betas:
