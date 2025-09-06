@@ -39,7 +39,7 @@ def parse_overrides(override_list):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="/media/desk16/zhiwei/paper_code/MethylFormer/methylbert/methylbert/configs/default.yaml", help="Path to YAML config")
+    parser.add_argument("--config", type=str, default="configs/default.yaml", help="Path to YAML config")
     parser.add_argument("overrides", nargs="*", help="Key=Value overrides (e.g., training.batch_size=32)")
     args = parser.parse_args()
 
@@ -84,11 +84,8 @@ def main():
 
     model.train()
 
-    ckpt = torch.load("checkpoints/epoch1.pt", map_location=device)
-    model.load_state_dict(ckpt["model"])
-
-
-    
+    # ckpt = torch.load("checkpoints/epoch1.pt", map_location=device)
+    # model.load_state_dict(ckpt["model"])
     for epoch in range(cfg["training"]["epochs"]):
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{cfg['training']['epochs']}")
         accum = cfg["training"]["gradient_accumulation"]
@@ -146,3 +143,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# git add methylbert/methylbert \
+#     -- ':!methylbert/methylbert/checkpoints'

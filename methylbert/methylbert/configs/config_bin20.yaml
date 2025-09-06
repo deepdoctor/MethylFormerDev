@@ -1,6 +1,6 @@
 data:
-  json_path: ../../methylformer/data/train_merged_bin40.json
-  max_len: 104
+  json_path: ../../methylformer/data/train_merged_bin20.json
+  max_len: 204
   step: 1
   sos_value: 0.0
   pad_value: 0.0
@@ -38,7 +38,7 @@ training:
   amp: false
   seed: 42
   log_every: 50
-  save_dir: checkpoints
+  save_dir: checkpoints/bin20
 loss:
   type: huber
   delta: 1.0
